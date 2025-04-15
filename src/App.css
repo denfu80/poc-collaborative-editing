@@ -1,0 +1,28 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.controls {
+  padding: 15px;
+  border-bottom: 1px solid #ccc;
+}
+
+.tools {
+  display: flex;
+  gap: 20px;
+}
+
+.canvas {
+  flex: 1;
+  position: relative;
+  background-color: white;
+  border: 1px solid #ccc;
+  cursor: crosshair;
+}
+
+select {
+  margin-left: 5px;
+  padding: 3px;
+}
