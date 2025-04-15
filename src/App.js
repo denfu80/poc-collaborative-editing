@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import io from 'socket.io-client';
 import './App.css';
+
+// Socket.io-Verbindung initialisieren
+const socket = io('http://localhost:5000');
 
 function App() {
   const [shapes, setShapes] = useState([]);
@@ -9,27 +13,61 @@ function App() {
   const [currentShape, setCurrentShape] = useState(null);
   const [actionLog, setActionLog] = useState([]);
   const [userId, setUserId] = useState('');
+  const [activeUsers, setActiveUsers] = useState([]);
   const canvasRef = useRef(null);
   
-  // Generiere eine Benutzer-ID beim ersten Laden
+  // Initialisieren und Socket-Events einrichten
   useEffect(() => {
+    // Generiere Benutzer-ID und teile sie dem Server mit
     const newUserId = 'user-' + Math.floor(Math.random() * 1000);
     setUserId(newUserId);
+    socket.emit('user-joined', newUserId);
+    
+    // Empfange initiale Formen vom Server
+    socket.on('init-shapes', (serverShapes) => {
+      setShapes(serverShapes);
+    });
+    
+    // Empfange neue Aktionen von anderen Benutzern
+    socket.on('new-action', (actionData) => {
+      // Aktualisiere das Aktionsprotokoll
+      setActionLog(prevLog => [...prevLog, actionData]);
+      
+      // Füge die neue Form hinzu
+      if (actionData.action === 'create') {
+        setShapes(prevShapes => [...prevShapes, actionData.shape]);
+      }
+    });
+    
+    // Empfange aktive Benutzer
+    socket.on('active-users', (users) => {
+      setActiveUsers(users);
+    });
+    
+    // Clean-up bei Komponenten-Unmount
+    return () => {
+      socket.off('init-shapes');
+      socket.off('new-action');
+      socket.off('active-users');
+    };
   }, []);
   
-  // Fügt eine Form hinzu und aktualisiert das Protokoll
+  // Fügt eine Form hinzu und sendet sie an den Server
   const addShape = (shape) => {
     const shapeWithCreator = { ...shape, creator: userId };
-    setShapes([...shapes, shapeWithCreator]);
     
-    const logEntry = {
+    const actionData = {
       action: 'create',
       shape: shapeWithCreator,
       timestamp: new Date().toISOString(),
       userId: userId
     };
     
-    setActionLog([...actionLog, logEntry]);
+    // Lokales Log aktualisieren
+    setActionLog(prevLog => [...prevLog, actionData]);
+    
+    // An den Server senden
+    socket.emit('add-shape', actionData);
   };
   
   // Zeichnen starten
@@ -201,6 +239,18 @@ function App() {
           {currentShape && (
             currentShape.type === 'rectangle' ? renderRectangle(currentShape) : renderCircle(currentShape)
           )}
+          
+          {/* Aktive Benutzer anzeigen */}
+          <div className="active-users-panel">
+            <h3>Aktive Benutzer:</h3>
+            <ul>
+              {activeUsers.map(user => (
+                <li key={user}>
+                  {user === userId ? `${user} (Sie)` : user}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
         
         <div className="log-panel">
