@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 
 function App() {
@@ -7,10 +7,30 @@ function App() {
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentShape, setCurrentShape] = useState(null);
+  const [actionLog, setActionLog] = useState([]);
+  const [userId, setUserId] = useState('');
   const canvasRef = useRef(null);
   
-  // Generiert eine eindeutige ID für Formen
-  const generateId = () => 'shape-' + Date.now();
+  // Generiere eine Benutzer-ID beim ersten Laden
+  useEffect(() => {
+    const newUserId = 'user-' + Math.floor(Math.random() * 1000);
+    setUserId(newUserId);
+  }, []);
+  
+  // Fügt eine Form hinzu und aktualisiert das Protokoll
+  const addShape = (shape) => {
+    const shapeWithCreator = { ...shape, creator: userId };
+    setShapes([...shapes, shapeWithCreator]);
+    
+    const logEntry = {
+      action: 'create',
+      shape: shapeWithCreator,
+      timestamp: new Date().toISOString(),
+      userId: userId
+    };
+    
+    setActionLog([...actionLog, logEntry]);
+  };
   
   // Zeichnen starten
   const handleMouseDown = (e) => {
@@ -21,7 +41,7 @@ function App() {
     const y = e.clientY - rect.top;
     
     const newShape = {
-      id: generateId(),
+      id: 'shape-' + Date.now(),
       type: selectedShape,
       x: x,
       y: y,
@@ -81,7 +101,7 @@ function App() {
           }
         }
         
-        setShapes([...shapes, finalShape]);
+        addShape(finalShape);
       }
       
       setCurrentShape(null);
@@ -121,6 +141,12 @@ function App() {
     />
   );
 
+  // Hilfsfunktion zum Formatieren von Zeitstempeln
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString();
+  };
+
   return (
     <div className="app-container">
       <div className="controls">
@@ -150,26 +176,48 @@ function App() {
               <option value="#000000">Schwarz</option>
             </select>
           </div>
+          
+          <div className="user-id">
+            <span>Benutzer-ID: {userId}</span>
+          </div>
         </div>
       </div>
 
-      <div 
-        ref={canvasRef}
-        className="canvas"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-      >
-        {/* Render alle gespeicherten Formen */}
-        {shapes.map(shape => 
-          shape.type === 'rectangle' ? renderRectangle(shape) : renderCircle(shape)
-        )}
+      <div className="main-content">
+        <div 
+          ref={canvasRef}
+          className="canvas"
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          {/* Render alle gespeicherten Formen */}
+          {shapes.map(shape => 
+            shape.type === 'rectangle' ? renderRectangle(shape) : renderCircle(shape)
+          )}
+          
+          {/* Render die Form, die gerade gezeichnet wird */}
+          {currentShape && (
+            currentShape.type === 'rectangle' ? renderRectangle(currentShape) : renderCircle(currentShape)
+          )}
+        </div>
         
-        {/* Render die Form, die gerade gezeichnet wird */}
-        {currentShape && (
-          currentShape.type === 'rectangle' ? renderRectangle(currentShape) : renderCircle(currentShape)
-        )}
+        <div className="log-panel">
+          <h2>Aktivitätsprotokoll</h2>
+          <div className="log-entries">
+            {actionLog.map((log, index) => (
+              <div key={index} className="log-entry">
+                <div>
+                  {log.userId === userId ? 'Sie' : log.userId} haben {log.shape.type === 'rectangle' ? 'ein Rechteck' : 'einen Kreis'} erstellt
+                </div>
+                <div className="timestamp">
+                  {formatTimestamp(log.timestamp)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
