@@ -26,3 +26,17 @@ select {
   margin-left: 5px;
   padding: 3px;
 }
+
+.shape {
+  position: absolute;
+  border-width: 2px;
+  border-style: solid;
+}
+
+.rectangle {
+  border-radius: 2px;
+}
+
+.circle {
+  border-radius: 50%;
+}
