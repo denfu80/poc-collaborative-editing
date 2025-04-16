@@ -1,17 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import io from 'socket.io-client';
 import './App.css';
+import RenderingEngine from './components/RenderingEngine';
+import ActivityLog from './components/ActivityLog';
+import ActiveUsers from './components/ActiveUsers';
 
 // Socket.io-connection to the server
 const socket = io('http://localhost:5000');
 
 function App() {
-  const [shapes, setShapes] = useState([]);
+  // State variables
+  const [events, setEvents] = useState([]);
   const [selectedShape, setSelectedShape] = useState('rectangle');
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentShape, setCurrentShape] = useState(null);
-  const [actionLog, setActionLog] = useState([]);
   const [userId, setUserId] = useState('');
   const [activeUsers, setActiveUsers] = useState([]);
   const canvasRef = useRef(null);
@@ -25,7 +28,7 @@ function App() {
     
     // Receive initial events from the server
     socket.on('init-events', (eventLog) => {
-      setShapes(eventLog.map(event => event.shape));
+      setEvents(eventLog);
     });
    
     // Receive active users from the server
@@ -33,13 +36,9 @@ function App() {
       setActiveUsers(users);
     });
 
-     // Receive new events from the server
-     socket.on('new-event', (eventData) => {
-      // Actionlog:
-      setActionLog(prevLog => [...prevLog, eventData]);
-      // Renderer:
-      setShapes(prevShapes => [...prevShapes, eventData.shape]);
-      
+    // Receive new events from the server
+    socket.on('new-event', (eventData) => {
+      setEvents(prevEvents => [...prevEvents, eventData]);
     });
     
     // Clean-up function to remove event listeners at unmount
@@ -137,76 +136,38 @@ function App() {
     }
   };
 
-  // Render function for rectangles
-  const renderRectangle = (shape) => (
-    <div 
-      key={shape.id}
-      className="shape rectangle"
-      style={{
-        left: `${shape.x}px`,
-        top: `${shape.y}px`,
-        width: `${shape.width}px`,
-        height: `${shape.height}px`,
-        borderColor: shape.color,
-        backgroundColor: `${shape.color}33`
-      }}
-    />
-  );
-
-  // Render function for circles
-  const renderCircle = (shape) => (
-    <div 
-      key={shape.id}
-      className="shape circle"
-      style={{
-        left: `${shape.x - shape.radius}px`,
-        top: `${shape.y - shape.radius}px`,
-        width: `${shape.radius * 2}px`,
-        height: `${shape.radius * 2}px`,
-        borderColor: shape.color,
-        backgroundColor: `${shape.color}33`
-      }}
-    />
-  );
-
-  // Hilfsfunktion zum Formatieren von Zeitstempeln
-  const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString();
-  };
-
   return (
     <div className="app-container">
       <div className="controls">
-        <h1>Kollaborative Zeichenanwendung</h1>
+        <h1>Collaborative Drawing App</h1>
         <div className="tools">
           <div>
-            <label>Form: </label>
+            <label>Shape: </label>
             <select 
               value={selectedShape} 
               onChange={(e) => setSelectedShape(e.target.value)}
             >
-              <option value="rectangle">Rechteck</option>
-              <option value="circle">Kreis</option>
+              <option value="rectangle">Rectangle</option>
+              <option value="circle">Circle</option>
             </select>
           </div>
           
           <div>
-            <label>Farbe: </label>
+            <label>Color: </label>
             <select 
               value={selectedColor} 
               onChange={(e) => setSelectedColor(e.target.value)}
               style={{ backgroundColor: selectedColor, color: selectedColor === '#000000' ? '#FFFFFF' : '#000000' }}
             >
-              <option value="#3B82F6">Blau</option>
-              <option value="#EF4444">Rot</option>
-              <option value="#10B981">Grün</option>
-              <option value="#000000">Schwarz</option>
+              <option value="#3B82F6">Blue</option>
+              <option value="#EF4444">Red</option>
+              <option value="#10B981">Green</option>
+              <option value="#000000">Black</option>
             </select>
           </div>
           
           <div className="user-id">
-            <span>Benutzer-ID: {userId}</span>
+            <span>User ID: {userId}</span>
           </div>
         </div>
       </div>
@@ -220,44 +181,24 @@ function App() {
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          {/* Render all persistent shapes */}
-          {shapes.map(shape => 
-            shape.type === 'rectangle' ? renderRectangle(shape) : renderCircle(shape)
-          )}
+          {/* Use the RenderingEngine component for shape rendering */}
+          <RenderingEngine 
+            events={events} 
+            currentShape={currentShape} 
+          />
           
-          {/* Render the current shape being drawn */}
-          {currentShape && (
-            currentShape.type === 'rectangle' ? renderRectangle(currentShape) : renderCircle(currentShape)
-          )}
-          
-          {/* Show the current user ID */}
-          <div className="active-users-panel">
-            <h3>Aktive Benutzer:</h3>
-            <ul>
-              {activeUsers.map(user => (
-                <li key={user}>
-                  {user === userId ? `${user} (Sie)` : user}
-                </li>
-              ))}
-            </ul>
-          </div>
+          {/* Use the ActiveUsers component */}
+          <ActiveUsers 
+            users={activeUsers} 
+            currentUserId={userId} 
+          />
         </div>
         
-        <div className="log-panel">
-          <h2>Aktivitätsprotokoll</h2>
-          <div className="log-entries">
-            {actionLog.map((log, index) => (
-              <div key={index} className="log-entry">
-                <div>
-                  {log.userId === userId ? 'Sie' : log.userId} haben {log.shape.type === 'rectangle' ? 'ein Rechteck' : 'einen Kreis'} erstellt
-                </div>
-                <div className="timestamp">
-                  {formatTimestamp(log.timestamp)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Use the ActivityLog component */}
+        <ActivityLog 
+          events={events} 
+          currentUserId={userId} 
+        />
       </div>
     </div>
   );
