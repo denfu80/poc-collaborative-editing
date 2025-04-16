@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import io from 'socket.io-client';
 import './App.css';
 
-// Socket.io-Verbindung initialisieren
+// Socket.io-connection to the server
 const socket = io('http://localhost:5000');
 
 function App() {
@@ -16,61 +16,51 @@ function App() {
   const [activeUsers, setActiveUsers] = useState([]);
   const canvasRef = useRef(null);
   
-  // Initialisieren und Socket-Events einrichten
+  // Initialize Socket.io connection and event listeners
   useEffect(() => {
-    // Generiere Benutzer-ID und teile sie dem Server mit
+    // Generate a random user ID
     const newUserId = 'user-' + Math.floor(Math.random() * 1000);
     setUserId(newUserId);
     socket.emit('user-joined', newUserId);
     
-    // Empfange initiale Formen vom Server
-    socket.on('init-shapes', (serverShapes) => {
-      setShapes(serverShapes);
+    // Receive initial events from the server
+    socket.on('init-events', (eventLog) => {
+      setShapes(eventLog.map(event => event.shape));
     });
-    
-    // Empfange neue Aktionen von anderen Benutzern
-    socket.on('new-action', (actionData) => {
-      // Aktualisiere das Aktionsprotokoll
-      setActionLog(prevLog => [...prevLog, actionData]);
-      
-      // Füge die neue Form hinzu
-      if (actionData.action === 'create') {
-        setShapes(prevShapes => [...prevShapes, actionData.shape]);
-      }
-    });
-    
-    // Empfange aktive Benutzer
+   
+    // Receive active users from the server
     socket.on('active-users', (users) => {
       setActiveUsers(users);
     });
+
+     // Receive new events from the server
+     socket.on('new-event', (eventData) => {
+      // Actionlog:
+      setActionLog(prevLog => [...prevLog, eventData]);
+      // Renderer:
+      setShapes(prevShapes => [...prevShapes, eventData.shape]);
+      
+    });
     
-    // Clean-up bei Komponenten-Unmount
+    // Clean-up function to remove event listeners at unmount
     return () => {
-      socket.off('init-shapes');
-      socket.off('new-action');
+      socket.off('init-events');
+      socket.off('new-event');
       socket.off('active-users');
     };
   }, []);
   
-  // Fügt eine Form hinzu und sendet sie an den Server
+  // Create a new shape and emit the action to the server
   const addShape = (shape) => {
-    const shapeWithCreator = { ...shape, creator: userId };
-    
-    const actionData = {
+    const eventData = {
       action: 'create',
-      shape: shapeWithCreator,
-      timestamp: new Date().toISOString(),
-      userId: userId
+      shape: shape
     };
-    
-    // Lokales Log aktualisieren
-    setActionLog(prevLog => [...prevLog, actionData]);
-    
-    // An den Server senden
-    socket.emit('add-shape', actionData);
+
+    socket.emit('add-event', eventData);
   };
   
-  // Zeichnen starten
+  // Start drawing a new shape
   const handleMouseDown = (e) => {
     if (!canvasRef.current) return;
     
@@ -97,7 +87,7 @@ function App() {
     setIsDrawing(true);
   };
   
-  // Form während des Zeichnens aktualisieren
+  // Update the shape dimensions while drawing
   const handleMouseMove = (e) => {
     if (!isDrawing || !currentShape || !canvasRef.current) return;
     
@@ -119,14 +109,14 @@ function App() {
     setCurrentShape(updatedShape);
   };
   
-  // Zeichnen beenden und Form hinzufügen
+  // Finalize the shape on mouse up
   const handleMouseUp = () => {
     if (isDrawing && currentShape) {
-      // Nur hinzufügen, wenn die Form eine minimale Größe hat
+      // Only add the shape if it has a valid size
       if ((selectedShape === 'rectangle' && Math.abs(currentShape.width) > 5 && Math.abs(currentShape.height) > 5) ||
           (selectedShape === 'circle' && currentShape.radius > 5)) {
         
-        // Bei negativen Werten die Position korrigieren
+        // If size is negative, adjust the position and size
         const finalShape = { ...currentShape };
         if (selectedShape === 'rectangle') {
           if (finalShape.width < 0) {
@@ -147,7 +137,7 @@ function App() {
     }
   };
 
-  // Render-Funktion für Rechtecke
+  // Render function for rectangles
   const renderRectangle = (shape) => (
     <div 
       key={shape.id}
@@ -163,7 +153,7 @@ function App() {
     />
   );
 
-  // Render-Funktion für Kreise
+  // Render function for circles
   const renderCircle = (shape) => (
     <div 
       key={shape.id}
@@ -230,17 +220,17 @@ function App() {
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          {/* Render alle gespeicherten Formen */}
+          {/* Render all persistent shapes */}
           {shapes.map(shape => 
             shape.type === 'rectangle' ? renderRectangle(shape) : renderCircle(shape)
           )}
           
-          {/* Render die Form, die gerade gezeichnet wird */}
+          {/* Render the current shape being drawn */}
           {currentShape && (
             currentShape.type === 'rectangle' ? renderRectangle(currentShape) : renderCircle(currentShape)
           )}
           
-          {/* Aktive Benutzer anzeigen */}
+          {/* Show the current user ID */}
           <div className="active-users-panel">
             <h3>Aktive Benutzer:</h3>
             <ul>

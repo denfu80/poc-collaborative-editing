@@ -14,42 +14,40 @@ const io = new Server(server, {
   }
 });
 
-// Speichert alle bisher erstellten Formen
-const shapes = [];
-// Speichert aktive Benutzer
+
+// In memory event log
+const eventLog = [];
+
+// In memory active users
 const activeUsers = new Set();
 
 io.on('connection', (socket) => {
   console.log('Ein Benutzer hat sich verbunden:', socket.id);
   
-  // Wenn ein neuer Benutzer beitritt, sende die vorhandenen Formen und aktiven Benutzer
+  // When a new user connects initiate their user ID and inform all clients. Also send them the event log.
   socket.on('user-joined', (userId) => {
     activeUsers.add(userId);
     socket.userId = userId;
-    
-    // Sende vorhandene Formen an den neu verbundenen Client
-    socket.emit('init-shapes', shapes);
-    
-    // Informiere alle Clients über aktive Benutzer
+    console.log('User-ID:', userId);
+    socket.emit('init-events', eventLog);
     io.emit('active-users', Array.from(activeUsers));
   });
   
-  // Wenn ein Benutzer eine Form hinzufügt
-  socket.on('add-shape', (shapeData) => {
-    shapes.push(shapeData.shape);
-    // Loggen für Debugging
-    console.log('Neue Form hinzugefügt von', socket.userId);
+  // When a new event is added, log it and inform all clients.
+  socket.on('add-event', (eventData) => {
+    console.log('New event by user with id: ', socket.userId);
     
-    // Sende das Action-Log-Eintrag an alle Clients
-    io.emit('new-action', shapeData);
+    eventData.userId = socket.userId;
+    eventData.timestamp = new Date().toISOString();
+    eventLog.push(eventData);
+    io.emit('new-event', eventData);
   });
   
-  // Wenn ein Benutzer die Verbindung trennt
+  // When a user disconnects, remove them from the active users set and inform all clients.
   socket.on('disconnect', () => {
-    console.log('Benutzer getrennt:', socket.userId);
+    console.log('User disconnected:', socket.userId);
     if (socket.userId) {
       activeUsers.delete(socket.userId);
-      // Informiere alle Clients über aktualisierte Benutzerliste
       io.emit('active-users', Array.from(activeUsers));
     }
   });
@@ -57,5 +55,5 @@ io.on('connection', (socket) => {
 
 const PORT = 5000;
 server.listen(PORT, () => {
-  console.log(`Server läuft auf Port ${PORT}`);
+  console.log(`Server running at port: ${PORT}`);
 });
