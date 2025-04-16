@@ -22,13 +22,21 @@ const eventLog = [];
 const activeUsers = new Set();
 
 io.on('connection', (socket) => {
-  console.log('Ein Benutzer hat sich verbunden:', socket.id);
+  console.log('User connected:', socket.id);
   
-  // When a new user connects initiate their user ID and inform all clients. Also send them the event log.
+  let currentUserId = null;
+  
+   // When a new user connects
   socket.on('user-joined', (userId) => {
+    // If we already have a user ID associated with this socket, remove it first
+    if (currentUserId) {
+      activeUsers.delete(currentUserId);
+    }
+    
+    currentUserId = userId;
     activeUsers.add(userId);
     socket.userId = userId;
-    console.log('User-ID:', userId);
+    console.log('User ID:', userId);
     socket.emit('init-events', eventLog);
     io.emit('active-users', Array.from(activeUsers));
   });
