@@ -4,6 +4,7 @@ import './App.css';
 import RenderingEngine from './components/RenderingEngine';
 import ActivityLog from './components/ActivityLog';
 import ActiveUsers from './components/ActiveUsers';
+import Header from './components/Header';
 
 // Socket.io-connection to the server
 const socket = io('http://localhost:5000');
@@ -70,17 +71,16 @@ function App() {
     const newShape = {
       id: 'shape-' + Date.now(),
       type: selectedShape,
-      x: x,
-      y: y,
+      startX: x,
+      startY: y,
       color: selectedColor
     };
     
-    if (selectedShape === 'rectangle') {
+    
       newShape.width = 0;
       newShape.height = 0;
-    } else {
       newShape.radius = 0;
-    }
+    
     
     setCurrentShape(newShape);
     setIsDrawing(true);
@@ -96,14 +96,14 @@ function App() {
     
     const updatedShape = { ...currentShape };
     
-    if (selectedShape === 'rectangle') {
-      updatedShape.width = x - updatedShape.x;
-      updatedShape.height = y - updatedShape.y;
-    } else {
-      const dx = x - updatedShape.x;
-      const dy = y - updatedShape.y;
-      updatedShape.radius = Math.sqrt(dx * dx + dy * dy);
-    }
+    updatedShape.width = x - updatedShape.startX;
+    updatedShape.height = y - updatedShape.startY;
+    updatedShape.endX = x;
+    updatedShape.endY = y;
+
+    const dx = x - updatedShape.startX;
+    const dy = y - updatedShape.startY;
+    updatedShape.radius = Math.sqrt(dx * dx + dy * dy);
     
     setCurrentShape(updatedShape);
   };
@@ -139,37 +139,13 @@ function App() {
   return (
     <div className="app-container">
       <div className="controls">
-        <h1>Collaborative Drawing App</h1>
-        <div className="tools">
-          <div>
-            <label>Shape: </label>
-            <select 
-              value={selectedShape} 
-              onChange={(e) => setSelectedShape(e.target.value)}
-            >
-              <option value="rectangle">Rectangle</option>
-              <option value="circle">Circle</option>
-            </select>
-          </div>
-          
-          <div>
-            <label>Color: </label>
-            <select 
-              value={selectedColor} 
-              onChange={(e) => setSelectedColor(e.target.value)}
-              style={{ backgroundColor: selectedColor, color: selectedColor === '#000000' ? '#FFFFFF' : '#000000' }}
-            >
-              <option value="#3B82F6">Blue</option>
-              <option value="#EF4444">Red</option>
-              <option value="#10B981">Green</option>
-              <option value="#000000">Black</option>
-            </select>
-          </div>
-          
-          <div className="user-id">
-            <span>User ID: {userId}</span>
-          </div>
-        </div>
+        <Header
+          userId={userId}
+          selectedShape={selectedShape}
+          setSelectedShape={setSelectedShape}
+          selectedColor={selectedColor}
+          setSelectedColor={setSelectedColor}
+        />
       </div>
 
       <div className="main-content">
@@ -181,20 +157,17 @@ function App() {
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
-          {/* Use the RenderingEngine component for shape rendering */}
           <RenderingEngine 
             events={events} 
             currentShape={currentShape} 
           />
           
-          {/* Use the ActiveUsers component */}
           <ActiveUsers 
             users={activeUsers} 
             currentUserId={userId} 
           />
         </div>
         
-        {/* Use the ActivityLog component */}
         <ActivityLog 
           events={events} 
           currentUserId={userId} 

@@ -12,20 +12,26 @@ const RenderingEngine = ({ events, currentShape }) => {
   }
   
   // Render function for rectangles
-  const renderRectangle = (shape) => (
+  const renderRectangle = (shape) => {
+    const left = Math.min(shape.startX, shape.endX);
+    const top = Math.min(shape.startY, shape.endY);
+    const width = Math.abs(shape.endX - shape.startX);
+    const height = Math.abs(shape.endY - shape.startY);
+
+    return (
     <div 
       key={shape.id}
       className="shape rectangle"
       style={{
-        left: `${shape.x}px`,
-        top: `${shape.y}px`,
-        width: `${shape.width}px`,
-        height: `${shape.height}px`,
+        left: `${left}px`,
+        top: `${top}px`,
+        width: `${width}px`,
+        height: `${height}px`,
         borderColor: shape.color,
         backgroundColor: `${shape.color}33`
       }}
     />
-  );
+  );}
 
   // Render function for circles
   const renderCircle = (shape) => (
@@ -33,8 +39,8 @@ const RenderingEngine = ({ events, currentShape }) => {
       key={shape.id}
       className="shape circle"
       style={{
-        left: `${shape.x - shape.radius}px`,
-        top: `${shape.y - shape.radius}px`,
+        left: `${shape.startX - shape.radius}px`,
+        top: `${shape.startY - shape.radius}px`,
         width: `${shape.radius * 2}px`,
         height: `${shape.radius * 2}px`,
         borderColor: shape.color,
