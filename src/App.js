@@ -43,7 +43,7 @@ function App() {
   // Create a new shape and emit the action to the server
   const addShape = (shape) => {
     const eventData = {
-      action: 'create',
+      action: 'shape-created',
       shape: shape
     };
 
@@ -100,24 +100,15 @@ function App() {
   
   // Finalize the shape on mouse up
   const handleMouseUp = () => {
+    const hasMinimumSize = () => {
+      return (Math.abs(currentShape.width) > 5 && Math.abs(currentShape.height) > 5) || currentShape.radius > 5;
+    }
+
     if (isDrawing && currentShape) {
       // Only add the shape if it has a valid size
-      if ((selectedShape === 'rectangle' && Math.abs(currentShape.width) > 5 && Math.abs(currentShape.height) > 5) ||
-          (selectedShape === 'circle' && currentShape.radius > 5)) {
+      if (hasMinimumSize()) {
         
-        // If size is negative, adjust the position and size
         const finalShape = { ...currentShape };
-        if (selectedShape === 'rectangle') {
-          if (finalShape.width < 0) {
-            finalShape.x += finalShape.width;
-            finalShape.width = Math.abs(finalShape.width);
-          }
-          if (finalShape.height < 0) {
-            finalShape.y += finalShape.height;
-            finalShape.height = Math.abs(finalShape.height);
-          }
-        }
-        
         addShape(finalShape);
       }
       
@@ -149,7 +140,6 @@ function App() {
             onMouseLeave={handleMouseUp}
           >
             <RenderingEngine
-              events={events}
               currentShape={currentShape}
             />
 

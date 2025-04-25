@@ -16,6 +16,7 @@ const RenderingEngine = ({currentShape}) => {
         // Receive new events from the server
         socket.on('new-event', (eventData) => {
             console.log('New event received:', eventData);
+            // TODO: filter out events that are not relevant for render
             setEvents(prevEvents => [...prevEvents, eventData]);
         });
 
