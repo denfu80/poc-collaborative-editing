@@ -131,6 +131,7 @@ function App() {
       <div className="app-container">
         <div className="controls">
           <Header
+            userId={currentUserId}
             selectedShape={selectedShape}
             setSelectedShape={setSelectedShape}
             selectedColor={selectedColor}
