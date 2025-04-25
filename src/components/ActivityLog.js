@@ -1,10 +1,32 @@
-import React from 'react';
-import io from "socket.io-client";
+import React, {useContext, useEffect, useState} from 'react';
+import {SocketContext} from "../SocketContext";
 
-const socket = io('http://localhost:5000');
+const ActivityLog = ({currentUserId }) => {
 
-const ActivityLog = ({ events, currentUserId }) => {
-  // Helper function to format timestamps
+    const socket = useContext(SocketContext);
+    const [events, setEvents] = useState([]);
+
+    // Initialize Socket.io connection and event listeners
+    useEffect(() => {
+
+        // Listen for the initial event log from the server
+        socket.on('init-events', (eventLog) => {
+            setEvents(eventLog);
+        });
+
+        // Receive new events from the server
+        socket.on('new-event', (eventData) => {
+            setEvents(prevEvents => [...prevEvents, eventData]);
+        });
+
+        // Clean-up function to remove event listeners at unmount
+        return () => {
+            socket.off('init-events');
+            socket.off('new-event');
+        };
+    }, [socket]);
+
+    // Helper function to format timestamps
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     const date = new Date(timestamp);

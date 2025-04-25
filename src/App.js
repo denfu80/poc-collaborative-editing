@@ -1,12 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import io from 'socket.io-client';
 import './App.css';
 import RenderingEngine from './components/RenderingEngine';
 import ActivityLog from './components/ActivityLog';
 import ActiveUsers from './components/ActiveUsers';
 import Header from './components/Header';
+import { SocketContext, socket } from './SocketContext';
 
-const socket = io('http://localhost:5000');
 
 function App() {
   // State variables
@@ -128,41 +127,43 @@ function App() {
   };
 
   return (
-    <div className="app-container">
-      <div className="controls">
-        <Header
-          selectedShape={selectedShape}
-          setSelectedShape={setSelectedShape}
-          selectedColor={selectedColor}
-          setSelectedColor={setSelectedColor}
-        />
-      </div>
-
-      <div className="main-content">
-        <div 
-          ref={canvasRef}
-          className="canvas"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
-          <RenderingEngine 
-            events={events} 
-            currentShape={currentShape} 
-          />
-          
-          <ActiveUsers
-            currentUserId={currentUserId}
+    <SocketContext.Provider value={socket}>
+      <div className="app-container">
+        <div className="controls">
+          <Header
+            selectedShape={selectedShape}
+            setSelectedShape={setSelectedShape}
+            selectedColor={selectedColor}
+            setSelectedColor={setSelectedColor}
           />
         </div>
-        
-        <ActivityLog
-          currentUserId={currentUserId}
-          events={events}
-        />
+
+        <div className="main-content">
+          <div
+            ref={canvasRef}
+            className="canvas"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            <RenderingEngine
+              events={events}
+              currentShape={currentShape}
+            />
+
+            <ActiveUsers
+              currentUserId={currentUserId}
+            />
+          </div>
+
+          <ActivityLog
+            currentUserId={currentUserId}
+            events={events}
+          />
+        </div>
       </div>
-    </div>
+    </SocketContext.Provider>
   );
 }
 

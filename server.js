@@ -36,7 +36,6 @@ io.on('connection', (socket) => {
     currentUserId = userId;
     activeUsers.add(userId);
     socket.userId = userId;
-    console.log('User ID:', userId);
     socket.emit('init-events', eventLog);
     io.emit('active-users', Array.from(activeUsers));
   });

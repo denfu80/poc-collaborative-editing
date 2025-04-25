@@ -1,11 +1,8 @@
-import React, {useEffect, useState} from 'react';
-import io from "socket.io-client";
-
-
-const socket = io('http://localhost:5000');
+import React, {useContext, useEffect, useState} from 'react';
+import {SocketContext} from "../SocketContext";
 
 const ActiveUsers = ({currentUserId}) => {
-
+    const socket = useContext(SocketContext);
     const [users, setActiveUsers] = useState([]);
 
     useEffect(() => {
@@ -16,7 +13,7 @@ const ActiveUsers = ({currentUserId}) => {
         return () => {
             socket.off('active-users');
         };
-    }, []);
+    }, [socket]);
 
   return (
     <div className="active-users-panel">
