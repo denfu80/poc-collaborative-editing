@@ -6,7 +6,6 @@ import ActivityLog from './components/ActivityLog';
 import ActiveUsers from './components/ActiveUsers';
 import Header from './components/Header';
 
-// Socket.io-connection to the server
 const socket = io('http://localhost:5000');
 
 function App() {
@@ -16,25 +15,18 @@ function App() {
   const [selectedColor, setSelectedColor] = useState('#3B82F6');
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentShape, setCurrentShape] = useState(null);
-  const [userId, setUserId] = useState('');
-  const [activeUsers, setActiveUsers] = useState([]);
   const canvasRef = useRef(null);
-  
+  const [currentUserId, setUserId] = useState('');
+
   // Initialize Socket.io connection and event listeners
   useEffect(() => {
-    // Generate a random user ID
     const newUserId = 'user-' + Math.floor(Math.random() * 1000);
     setUserId(newUserId);
     socket.emit('user-joined', newUserId);
-    
-    // Receive initial events from the server
+
+    // Listen for the initial event log from the server
     socket.on('init-events', (eventLog) => {
       setEvents(eventLog);
-    });
-   
-    // Receive active users from the server
-    socket.on('active-users', (users) => {
-      setActiveUsers(users);
     });
 
     // Receive new events from the server
@@ -46,7 +38,6 @@ function App() {
     return () => {
       socket.off('init-events');
       socket.off('new-event');
-      socket.off('active-users');
     };
   }, []);
   
@@ -140,7 +131,6 @@ function App() {
     <div className="app-container">
       <div className="controls">
         <Header
-          userId={userId}
           selectedShape={selectedShape}
           setSelectedShape={setSelectedShape}
           selectedColor={selectedColor}
@@ -162,15 +152,14 @@ function App() {
             currentShape={currentShape} 
           />
           
-          <ActiveUsers 
-            users={activeUsers} 
-            currentUserId={userId} 
+          <ActiveUsers
+            currentUserId={currentUserId}
           />
         </div>
         
-        <ActivityLog 
-          events={events} 
-          currentUserId={userId} 
+        <ActivityLog
+          currentUserId={currentUserId}
+          events={events}
         />
       </div>
     </div>

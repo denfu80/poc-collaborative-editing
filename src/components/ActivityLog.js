@@ -1,6 +1,8 @@
 import React from 'react';
+import io from "socket.io-client";
 
-// ActivityLog component to display event history
+const socket = io('http://localhost:5000');
+
 const ActivityLog = ({ events, currentUserId }) => {
   // Helper function to format timestamps
   const formatTimestamp = (timestamp) => {

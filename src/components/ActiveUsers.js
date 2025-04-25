@@ -1,7 +1,23 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
+import io from "socket.io-client";
 
-// ActiveUsers component to display currently connected users
-const ActiveUsers = ({ users, currentUserId }) => {
+
+const socket = io('http://localhost:5000');
+
+const ActiveUsers = ({currentUserId}) => {
+
+    const [users, setActiveUsers] = useState([]);
+
+    useEffect(() => {
+        socket.on('active-users', (users) => {
+            setActiveUsers(users);
+        });
+
+        return () => {
+            socket.off('active-users');
+        };
+    }, []);
+
   return (
     <div className="active-users-panel">
       <h3>Active Users:</h3>
